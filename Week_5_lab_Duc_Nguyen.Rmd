@@ -1,0 +1,54 @@
+---
+title: "Week_5_lab_Duc_Nguyen"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r}
+rm(list = ls())
+```
+```{r}
+library(tidyverse)
+library(completejourney)
+library(lubridate)
+```
+```{r}
+transactions <- transactions_sample
+
+```
+
+```{r}
+transactions %>% inner_join(demographics) %>% group_by(household_size) %>% 
+  summarize(total_sales = sum(sales_value)) %>% 
+  ggplot(aes(x= household_size, y = total_sales,fill = household_size))+
+  geom_col()+
+  scale_y_continuous(label = scales::dollar )+ ggtitle("Household size and total sales value")
+```
+
+
+```{r}
+transactions %>% inner_join(demographics) %>% inner_join(products) %>% 
+  select(product_category,sales_value,kids_count) %>%
+  group_by(product_category) %>% 
+  summarize(total_sales = sum(sales_value)) %>% arrange(desc(total_sales)) %>%
+  slice(1:5) %>% 
+  ggplot(aes(x= product_category, y = total_sales, fill = product_category)) + 
+  geom_col(width = .5)+
+  scale_y_continuous(labels = scales::dollar)+
+  theme(axis.text.x = element_blank())+ ggtitle("Top 5 products category's sales")
+```
+
+```{r} 
+transactions %>% inner_join(products) %>% select(product_type, retail_disc) %>% 
+  group_by(product_type) %>% summarize(average_disc = round(mean(retail_disc),0)) %>% 
+  arrange(desc(average_disc)) %>% slice(1:8) %>% 
+  ggplot(aes(reorder(product_type,average_disc),average_disc, fill= product_type)) +
+  geom_col()+
+  coord_flip()+
+  labs(title = "Top 8 products that have the highest average discount", x = "Product type")
+```
+
+
+
+
