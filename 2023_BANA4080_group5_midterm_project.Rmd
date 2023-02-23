@@ -1,0 +1,93 @@
+---
+title: "2023_BANA4080_group5_midterm_project"
+author: "Duc Nguyen, Daniella Lucas, Christine Ludwig"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r message= FALSE, warning=FALSE}
+library(completejourney)
+library(tidyverse)
+library(lubridate)
+```
+Use lubridate package because we want to transform our date time object into quarter for better visualization.
+
+
+```{r}
+transactions <- get_transactions()
+products <- products
+demographic<- demographics
+campaigns <- campaigns
+```
+
+
+```{r message= FALSE}
+df<- transactions %>% inner_join(products) %>% inner_join(coupons) %>% inner_join(coupon_redemptions) %>% inner_join(demographic)
+```
+
+
+```{r}
+df2<-df %>% filter(quantity != 0, sales_value!=0) %>% select(sales_value,product_type, transaction_timestamp, household_size,campaign_id)
+```
+Filter out unnecessary data and select only needed columns to reduce info overload.
+
+
+```{r}
+df2<- df2 %>% modify_if(is.POSIXct, as.Date) %>% mutate(yqt = quarter(transaction_timestamp, with_year = TRUE ))
+```
+Transforming to date data type
+
+
+**Business Question: Which products have a positive trend in total sales for each quarter and which household size and campaign corresponds to it?**
+
+```{r message= FALSE}
+df2 %>% group_by(product_type,yqt) %>% summarize(total_sales = sum(sales_value)) %>% filter(total_sales> 800) %>% 
+  ggplot()+
+  geom_line(aes(x = yqt, y = total_sales))+
+  facet_wrap(~ product_type, ncol = 3)+
+  labs(title = "Total sales per quarter larger than $800")+
+  theme(axis.text.x = element_text(angle = 45),
+        strip.text.x = element_text(size = 7.5))
+```
+
+
+Choice beef has a spike in Q3, which starts in a positive slope in Q2 and continue toward the end of Q3. Which makes sense because Q2 is from April to June, which means the weather is getting nicer out which leads to people to grill out more.
+
+
+```{r}
+df2 %>% filter(str_detect(product_type,"CHOICE BEEF")) %>% 
+  filter(yqt == 2017.2) %>% group_by(campaign_id) %>% summarize(total_sales = sum(sales_value)) %>% arrange(desc(total_sales))
+```
+Diving into the effectiveness of each campaign during Q2 for Choice Beef, we notice that campaign 18 is driving the most sales while 13 is driving the least.
+
+
+
+Household size would be good to look into for demographics.Analyzing which house hold size has the most choice beef purchases in quarter 2 and the corresponding campaign id.
+```{r, message= FALSE}
+df2 %>% filter(str_detect(product_type,"CHOICE BEEF")) %>% 
+  filter(yqt == 2017.2) %>%  group_by(household_size,campaign_id,yqt) %>% summarize(total_sales = sum(sales_value)) %>% arrange(desc(total_sales)) %>% 
+  ggplot(aes(reorder(household_size,total_sales), y = total_sales, 
+             fill = household_size))+
+  geom_col()+
+  facet_wrap(~campaign_id, scales = "free_x")+
+  ggtitle("Total beef sales in Q2 by campaign id")+
+  labs(x = "household size")
+```
+
+
+**Final summary**
+
+  Seems like campaign 18 has the best overall effect on house_hold size of 2 for CHOICE BEEF in Q2 of 2017. Therefore, we should focus our efforts into campaign 18 starting in the beginning of Q2 for maximal sales for household size of 2. Campaign 18 and household size of 2 shows the most potential growth.
+  
+  Based on this analysis, we found that campaign 18 has the most effectiveness( most sales) for Q2 for Choice beef. Therefore, We should reduce the money investing into campaign 13. On the other hand, when Q2 starts, we need to invest most of our effort and marketing into campaign 18 and 8 in order to maximize growth from this product line.
+
+
+
+
+
+
+
+
+
+
+
